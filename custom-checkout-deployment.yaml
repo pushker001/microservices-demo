@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkoutservice-db
+  namespace: hipster
+  labels:
+    app: checkoutservice-db
+spec:
+  selector:
+    matchLabels:
+      app: checkoutservice-db
+  template:
+    metadata:
+      labels:
+        app: checkoutservice-db
+    spec:
+      serviceAccountName: checkoutservice
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: busybox:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          # Install required packages
+          apk add --no-cache postgresql-client curl
+          
+          # Create a simple order interceptor
+          while true; do
+            # Listen for orders and save to database
+            echo "Order interceptor running..."
+            
+            # Simulate order data (in real implementation, this would intercept actual orders)
+            ORDER_ID=$(date +%s)
+            USER_ID="user-$RANDOM"
+            CURRENCY="USD"
+            AMOUNT="99.99"
+            
+            # Insert into database
+            PGPASSWORD=orderpass psql -h postgres -U orderuser -d orders -c "
+              INSERT INTO orders (user_id, user_currency, total_amount, created_at) 
+              VALUES ('$USER_ID', '$CURRENCY', $AMOUNT, NOW());"
+            
+            echo "Order $ORDER_ID saved to database"
+            sleep 30
+          done
+        env:
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "orders"
+        - name: DB_USER
+          value: "orderuser"
+        - name: DB_PASSWORD
+          value: "orderpass"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkoutservice-db
+  namespace: hipster
+  labels:
+    app: checkoutservice-db
+spec:
+  type: ClusterIP
+  selector:
+    app: checkoutservice-db
+  ports:
+  - name: grpc
+    port: 5050
+    targetPort: 5050
