@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: hipster
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-init
+        image: postgres:13
+        command:
+        - /bin/bash
+        - -c
+        - |
+          PGPASSWORD=orderpass psql -h postgres -U orderuser -d orders -c "
+          CREATE TABLE IF NOT EXISTS orders (
+            id SERIAL PRIMARY KEY,
+            user_id VARCHAR(255),
+            user_currency VARCHAR(10),
+            items JSONB,
+            total_amount DECIMAL(10,2),
+            shipping_address JSONB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );"
+      restartPolicy: Never

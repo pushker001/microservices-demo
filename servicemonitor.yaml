@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hipster-services
+  namespace: hipster
+  labels:
+    app: hipster-shop
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  endpoints:
+  - port: http
+    path: /metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hipster-grpc-services
+  namespace: hipster
+  labels:
+    app: hipster-shop
+spec:
+  selector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values: [adservice, cartservice, checkoutservice, currencyservice, emailservice, paymentservice, productcatalogservice, recommendationservice, shippingservice]
+  endpoints:
+  - port: grpc
+    path: /metrics
